@@ -1,0 +1,48 @@
+	SELECT b.data1, b.data2 FROM (
+	
+  SELECT * FROM
+	(
+  
+    -- unpack first column
+		(
+		SELECT newresult.resultx.value('.','nvarchar(max)') AS data1
+		, ROW_NUMBER() OVER (ORDER BY resultx) AS RowNum
+		 FROM
+		(
+		SELECT CONVERT(XML,
+		'<root><detail><data1> </data1><data2>2</data2></detail><detail><data1>0</data1><data2>19</data2></detail></root>'
+		) AS
+		Result
+
+		) XmlResults
+
+		CROSS APPLY Result.nodes('root/detail/data1') newresult(resultx)
+		) rtstatus
+
+		LEFT JOIN
+    
+    -- left join with second column on RowNum key
+    
+		(
+		(
+				SELECT newresult1.resultx.value('.','nvarchar(max)') AS data1,
+				ROW_NUMBER() OVER (ORDER BY resultx) AS RowNum1
+				 FROM
+				(
+				SELECT CONVERT(XML,
+		'<root><detail><data1> </data1><data2>2</data2></detail><detail><data1>0</data1><data2>19</data2></detail></root>'
+  ) AS
+				Result
+
+				) XmlResults1
+
+				CROSS APPLY Result.nodes('root/detail/data1') newresult1(resultx)
+			)
+		) counts
+
+		ON data1.RowNum = data2.RowNum1
+		)
+
+		) b
+
+		FOR JSON PATH, WITHOUT_ARRAY_WRAPPER
